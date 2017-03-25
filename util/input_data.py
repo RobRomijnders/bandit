@@ -36,6 +36,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.misc import imresize
 
+from util.util_funcs import nhot
+
 
 def maybe_download(filename, work_directory):
   """Download the data from Yann's website, unless it's already here."""
@@ -97,8 +99,13 @@ def extract_labels(filename, one_hot=False):
       return dense_to_one_hot(labels)
     return labels
 
+class MNISTDataSet(object):
+    bsz = 16
+    width = 45
+    num_a = 3
+    num_actions = 10
 
-class DataSet(object):
+class DataSet(MNISTDataSet):
 
   def __init__(self, images, labels, fake_data=False, one_hot=False,
                dtype=tf.float32):
@@ -151,8 +158,10 @@ class DataSet(object):
   def epochs_completed(self):
     return self._epochs_completed
 
-  def next_batch(self, batch_size, fake_data=False):
+  def next_batch(self, batch_size = None, fake_data=False):
     """Return the next `batch_size` examples from this data set."""
+    if batch_size is None:
+      batch_size = self.bsz
     if fake_data:
       fake_image = [1] * 784
       if self.one_hot:
@@ -198,14 +207,21 @@ class DataSet(object):
           axarr[x].set_title('label %s'%label[x])
       plt.show()
       return
-  def next_mix_batch(self, bsz, width = 45,NUM=3):
+  def next_mix_batch(self,make_hot = False,bsz = None, width = None,NUM=None):
       """
       Samples a batch and mixes NUM digits into one big image
       :param bsz: batchsize of the output
-      :param width: total width of the image where the digits are placed
       :param NUM: number of digits to mix
+      :param make_hot: a function to make your output n_hot
       :return: image array [bsz, width, width] and label array [bsz,]
       """
+      if bsz is None:
+        bsz = self.bsz
+      if width is None:
+        width = self.width
+      if NUM is None:
+        NUM = self.num_a
+
       X,Y = self.next_batch(bsz*NUM)
       IM = [None]*bsz
       LBL = [None]*bsz
@@ -230,6 +246,8 @@ class DataSet(object):
 
       IMS = np.stack(IM)
       LBLS = np.stack(LBL)
+      if make_hot:
+        LBLS = nhot(LBLS)
 
       return IMS, LBLS
 
@@ -240,9 +258,7 @@ class DataSet(object):
 
 
 def read_data_sets(train_dir, fake_data=False, one_hot=False, dtype=tf.float32):
-  class DataSets(object):
-    pass
-  data_sets = DataSets()
+  data_sets = MNISTDataSet()
 
   if fake_data:
     def fake():
@@ -276,7 +292,7 @@ def read_data_sets(train_dir, fake_data=False, one_hot=False, dtype=tf.float32):
   train_labels = train_labels[VALIDATION_SIZE:]
 
   data_sets.train = DataSet(train_images, train_labels, dtype=dtype)
-  data_sets.validation = DataSet(validation_images, validation_labels,
+  data_sets.val = DataSet(validation_images, validation_labels,
                                  dtype=dtype)
   data_sets.test = DataSet(test_images, test_labels, dtype=dtype)
 
