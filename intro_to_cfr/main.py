@@ -102,7 +102,7 @@ def cfr(cards, history, p0, p1):
     return nodeUtil
 
 if __name__ == '__main__':
-    iterations = 1000
+    iterations = 1000 #Set to 1000000, but takes longer
     train(iterations)
 
     for key in sorted(nodeMap):

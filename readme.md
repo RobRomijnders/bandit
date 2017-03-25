@@ -5,15 +5,15 @@ The code uses same naming of functions and variables as the authors.
 Expected output
 
 ```
-Starting card  1. With history    , we PASS with p=0.00 BET with p=1.00
+Starting card  1. With history    , we PASS with p=0.35 BET with p=0.65
 Starting card  1. With history   b, we PASS with p=1.00 BET with p=0.00
 Starting card  1. With history   p, we PASS with p=1.00 BET with p=0.00
 Starting card  1. With history  pb, we PASS with p=1.00 BET with p=0.00
 Starting card  2. With history    , we PASS with p=1.00 BET with p=0.00
-Starting card  2. With history   b, we PASS with p=1.00 BET with p=0.00
+Starting card  2. With history   b, we PASS with p=0.00 BET with p=1.00
 Starting card  2. With history   p, we PASS with p=1.00 BET with p=0.00
-Starting card  2. With history  pb, we PASS with p=1.00 BET with p=0.00
-Starting card  3. With history    , we PASS with p=0.20 BET with p=0.80
+Starting card  2. With history  pb, we PASS with p=0.00 BET with p=1.00
+Starting card  3. With history    , we PASS with p=1.00 BET with p=0.00
 Starting card  3. With history   b, we PASS with p=0.00 BET with p=1.00
 Starting card  3. With history   p, we PASS with p=0.00 BET with p=1.00
 Starting card  3. With history  pb, we PASS with p=0.00 BET with p=1.00
