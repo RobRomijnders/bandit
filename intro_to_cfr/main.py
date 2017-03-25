@@ -102,8 +102,13 @@ def cfr(cards, history, p0, p1):
     return nodeUtil
 
 if __name__ == '__main__':
-    iterations = 10
+    iterations = 1000
     train(iterations)
+
+    for key in sorted(nodeMap):
+        start = key[0]
+        hist = cdl(len(key)>1, key[1:], '')
+        print('Starting card %2s. With history %3s, we PASS with p=%4.2f BET with p=%4.2f'%(start, hist, nodeMap[key].strategy[0], nodeMap[key].strategy[1]))
 
 
 
