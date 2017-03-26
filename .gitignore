@@ -1,2 +1,13 @@
 temp_*
 /.idea
+
+*pyc
+*.tar.gz
+
+MNIST*
+
+MNIST_data/
+model/MNIST_data/
+doc/
+
+__pycache__

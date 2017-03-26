@@ -11,6 +11,24 @@ def nhot(X, D = 10):
         Y[n,X[n]] = 1.0/d
     return Y
 
+def acc_intersection(X,Y):
+    """
+    Calculate the accuracy.
+    For the intersection, defined as the |intersection|/max(|X|,|Y|)
+    calculated per row
+    :param X:
+    :param Y:
+    :return:
+    """
+    N,D1 = X.shape
+    N,D2 = Y.shape
+    D = np.max((D1,D2))
+
+    Z = np.hstack((X,Y))
+    Z.sort(axis=1)
+    acc = np.sum(Z[:,1:] == Z[:,:-1],axis=1)/float(D)
+    return np.mean(acc)
+
 
 class EWMA(object):
     def __init__(self,alpha):
@@ -29,11 +47,11 @@ class EWMA(object):
 
     @property
     def tup(self):
-        return self.value,self.value_recent
+        return self.value_recent,self.value
 
     @property
     def val(self):
         return self.value
 
     def __str__(self):
-        return "%ewma: 5.3f most recent value %5.3f"%(self.value,self.value_recent)
+        return "%ewma: 5.3f most recent value %5.3f"%(self.tup)

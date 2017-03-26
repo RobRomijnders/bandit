@@ -26,15 +26,13 @@ import tensorflow.python.platform
 import numpy
 from six.moves import urllib
 from six.moves import xrange  # pylint: disable=redefined-builtin
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
-import tensorflow as tf  #version alpha 1.0
-tf.logging.set_verbosity(tf.logging.ERROR)
+
 SOURCE_URL = 'http://yann.lecun.com/exdb/mnist/'
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.misc import imresize
+from scipy.ndimage import zoom
 
 from util.util_funcs import nhot
 
@@ -102,23 +100,22 @@ def extract_labels(filename, one_hot=False):
 class MNISTDataSet(object):
     bsz = 16
     width = 45
+    height = 45
     num_a = 3
     num_actions = 10
+    mu = None
+    std = None
+    norm = False
 
 class DataSet(MNISTDataSet):
 
-  def __init__(self, images, labels, fake_data=False, one_hot=False,
-               dtype=tf.float32):
+  def __init__(self, images, labels, fake_data=False, one_hot=False):
     """Construct a DataSet.
 
     one_hot arg is used only if fake_data is true.  `dtype` can be either
     `uint8` to leave the input as `[0, 255]`, or `float32` to rescale into
     `[0, 1]`.
     """
-    dtype = tf.as_dtype(dtype).base_dtype
-    if dtype not in (tf.uint8, tf.float32):
-      raise TypeError('Invalid image dtype %r, expected uint8 or float32' %
-                      dtype)
     if fake_data:
       self._num_examples = 10000
       self.one_hot = one_hot
@@ -133,14 +130,18 @@ class DataSet(MNISTDataSet):
       assert images.shape[3] == 1
       images = images.reshape(images.shape[0],
                               images.shape[1] * images.shape[2])
-      if dtype == tf.float32:
-        # Convert from [0, 255] -> [0.0, 1.0].
-        images = images.astype(numpy.float32)
-        images = numpy.multiply(images, 1.0 / 255.0)
+
+      # Convert from [0, 255] -> [0.0, 1.0].
+      images = images.astype(numpy.float32)
+      if self.norm:
+        print('hello')
+        images -= self.mu
+        images /= self.std
     self._images = images
     self._labels = labels
     self._epochs_completed = 0
     self._index_in_epoch = 0
+    return
 
   @property
   def images(self):
@@ -194,20 +195,22 @@ class DataSet(MNISTDataSet):
       :return: None
       """
       if mix:
-        im, label = self.next_mix_batch(4)
-        width = im.shape[1]
+        im, label = self.next_mix_batch(False,bsz=4)
+        width = im.shape[2]
+        height = im.shape[1]
       else:
-        im, label = self.next_batch(4)
+        im, label = self.next_batch(False,bsz=4)
         width = 28
+        height = width
 
       f, axarr = plt.subplots(4,1)
 
       for x in range(4):
-          axarr[x].imshow(np.reshape(im[x], (width,width)))
+          axarr[x].imshow(np.reshape(im[x], (height,width)))
           axarr[x].set_title('label %s'%label[x])
       plt.show()
       return
-  def next_mix_batch(self,make_hot = False,bsz = None, width = None,NUM=None):
+  def next_mix_batch(self,make_hot = False,bsz = None, width = None, height = None,NUM=None):
       """
       Samples a batch and mixes NUM digits into one big image
       :param bsz: batchsize of the output
@@ -221,24 +224,28 @@ class DataSet(MNISTDataSet):
         width = self.width
       if NUM is None:
         NUM = self.num_a
+      if height is None:
+        height = self.height
 
       X,Y = self.next_batch(bsz*NUM)
+      # print('var before%5.3f'%np.var(X))
+      # print('mean before%5.3f'%np.mean(X))
       IM = [None]*bsz
       LBL = [None]*bsz
 
       width2 = 14
 
       for b in range(bsz):
-        im = np.zeros((width, width))
+        im = np.zeros((height, width))
         vert = np.random.randint(0, max(int(width/3)-width2,1),(3,))
-        hor = np.random.randint(0, width-width2, (3,))
+        hor = np.random.randint(0, height-width2, (3,))
         lbl = []
         for n in range(NUM):
           h = hor[n]
           v = min(vert[n]+width2*n,width-width2)
 
           i = b*NUM + n
-          im_digit = imresize(np.reshape(X[i],(28,28)),0.5)
+          im_digit = zoom(np.reshape(X[i],(28,28)),0.5)
           im[h:h+width2,v:v+width2] = im_digit
           lbl.append(Y[i])
         IM[b] = im
@@ -246,23 +253,24 @@ class DataSet(MNISTDataSet):
 
       IMS = np.stack(IM)
       LBLS = np.stack(LBL)
+
+      # # TODO remove this ugly lines:
+      # # IMS -= np.mean(IMS)
+      # # IMS /= np.std(IMS)
+      # print('var after%5.3f' % np.var(IMS))
+      # print('mean after%5.3f' % np.mean(IMS))
+
       if make_hot:
-        LBLS = nhot(LBLS)
+        return IMS, nhot(LBLS.copy()), LBLS
+      else:
+        return IMS, LBLS
 
-      return IMS, LBLS
-
-
-
-
-
-
-
-def read_data_sets(train_dir, fake_data=False, one_hot=False, dtype=tf.float32):
+def read_data_sets(train_dir, fake_data=False, one_hot=False,norm = True):
   data_sets = MNISTDataSet()
 
   if fake_data:
     def fake():
-      return DataSet([], [], fake_data=True, one_hot=one_hot, dtype=dtype)
+      return DataSet([], [], fake_data=True, one_hot=one_hot)
     data_sets.train = fake()
     data_sets.validation = fake()
     data_sets.test = fake()
@@ -291,9 +299,12 @@ def read_data_sets(train_dir, fake_data=False, one_hot=False, dtype=tf.float32):
   train_images = train_images[VALIDATION_SIZE:]
   train_labels = train_labels[VALIDATION_SIZE:]
 
-  data_sets.train = DataSet(train_images, train_labels, dtype=dtype)
-  data_sets.val = DataSet(validation_images, validation_labels,
-                                 dtype=dtype)
-  data_sets.test = DataSet(test_images, test_labels, dtype=dtype)
+  if norm:
+    MNISTDataSet.mu = np.mean(train_images)
+    MNISTDataSet.std = np.std(train_images)+1E-9
+    MNISTDataSet.norm = True
+  data_sets.train = DataSet(train_images, train_labels)
+  data_sets.val = DataSet(validation_images, validation_labels)
+  data_sets.test = DataSet(test_images, test_labels)
 
   return data_sets
