@@ -14,6 +14,8 @@ class Model():
         num_actions = cf['num_actions']
         lr = cf['lr']
         bsz = cf['bsz']
+        lambda_ = cf['lambda']
+        POEM = cf['POEM']
         channels = 1
 
         self.X = tf.placeholder(tf.float32, [bsz,height, width,channels],"input_image")
@@ -63,13 +65,21 @@ class Model():
             importance_sampling = tf.multiply(importance,self.reward)        #in [bsz,]
             self.SN_estimator = tf.reduce_sum(importance_sampling)/effective_sample_size #scalar
 
+            #Implement the POEM part
+            mean, var = tf.nn.moments(importance_sampling, axes=[0])
+            penalty = lambda_*tf.sqrt(tf.divide(var,bsz))
+
+
         with tf.variable_scope('opt', reuse=False) as scope:
 
             global_step = tf.Variable(0, trainable=False)
             lr_decay = tf.train.exponential_decay(lr, global_step, 5000000, 0.99, staircase=False)
             optimizer = tf.train.AdamOptimizer(learning_rate=lr_decay)
 
+            #Intuition: greater rewards are better, lower variance is better
             self.cost = -1.0*self.SN_estimator
+            if POEM:
+                self.cost += penalty
             self.train_step = optimizer.minimize(self.cost, global_step = global_step)
 
             self.init_op = tf.global_variables_initializer()

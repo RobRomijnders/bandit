@@ -16,7 +16,9 @@ cf = {  'width'         :width,
         'height'        :height,
         'num_actions'   :10,
         'lr'            :0.001,
-        'bsz'           :bsz}
+        'bsz'           :bsz,
+        'lambda'        :0.0005,
+        'POEM'          :True}
 
 model = Model(cf)
 

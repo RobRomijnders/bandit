@@ -174,7 +174,7 @@ class Dataloader(object):
       action = np.random.choice(10,size=(batch_size,),replace=True,p=logging_pol)
       reward = np.equal(action,correct).astype(np.float32)
       prob = np.array([logging_pol[a] for a in action]).astype(np.float32)
-      return X,action,reward,prob
+      return X,action,reward-0.1,prob
 
 
 def read_data_sets(train_dir, one_hot=False,norm=False):
