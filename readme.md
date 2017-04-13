@@ -84,3 +84,11 @@ _Say some log (features, action, reward) gives a reward of +8. Our old policy ch
 
        * [Counterfactual risk minimzation](https://arxiv.org/pdf/1502.02362.pdf)
        * [Deepstack: Expert-Level Artificial Intelligence in No-Limit Poker](https://arxiv.org/abs/1701.01724)
+
+   * Matrial used for the implementation
+
+     * [Default implementation used the self normalized estimator](https://www.cs.cornell.edu/people/tj/publications/swaminathan_joachims_15d.pdf)
+     * [Set flag POEM to true to train the POEM implementation](https://arxiv.org/pdf/1502.02362.pdf)
+
+
+As always, I am curious to any comments and questions. Reach me at romijndersrob@gmail.com
