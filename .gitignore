@@ -12,4 +12,6 @@ doc/
 
 __pycache__
 model/mnist_model.py
+model/MNIST_main.py
 model/ff.py
+model/train_log_reg.py
