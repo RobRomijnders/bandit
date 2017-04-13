@@ -11,3 +11,5 @@ model/MNIST_data/
 doc/
 
 __pycache__
+model/mnist_model.py
+model/ff.py

@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from util import input_data
 from model.conv import Model
+
 from util.util_funcs import EWMA, acc_intersection
 
 import numpy as np
@@ -15,20 +16,20 @@ mnist = input_data.read_data_sets("MNIST_data")
 
 """Plot some normal image"""
 cf = {}
-cf['width'] = WIDTH = input_data.MNISTDataSet.width = 48 #preferably a multiple of 4
-cf['height'] = HEIGHT = input_data.MNISTDataSet.height = 16
-cf['num_a'] = NUM_A = input_data.MNISTDataSet.num_a = 3 #how many are active at some moment
+cf['width'] = input_data.MNISTDataSet.width = 14
+cf['height'] =input_data.MNISTDataSet.height =  14
+cf['num_a'] = 1
 cf['num_actions'] = 10 #how many possible actions
-cf['lr'] = 0.0005 #Static learning rate
+cf['lr'] = 0.001 #Static learning rate
 
-dropout = 0.8
-max_iterations = 10000
+NUM_A = 1
+
+dropout = 0.6
+max_iterations = 100000
 log_interval = 200
-batchsize = input_data.MNISTDataSet.bsz = 16
+batchsize = input_data.MNISTDataSet.bsz = 54
 
-im, lbl, _ = mnist.train.next_mix_batch(True)
-# mnist.train.plot_example(True)
-
+X, y, r = mnist.train.random_policy()
 model = Model(cf)
 
 """Training time"""
@@ -45,17 +46,20 @@ try:
     print('  -default strategy yields entropy %5.3f'%(-1.0*np.log(1.0/10)))
     print('  -optimal strategy yields entropy %5.3f' % (-1.0 * np.log(1.0 / NUM_A)))
     for i in range(max_iterations):
-        X_batch, y_batch, _ = mnist.train.next_mix_batch(True)
-        cost,_,debug = sess.run([model.cost_batch,model.train_step,model.pred],{model.X:X_batch, model.y: y_batch, model.keep_prob:dropout})
+        X_batch, y_batch, r_batch = mnist.train.random_policy()
+        cost,_,debug = sess.run([model.MAE,model.train_step,model.pred],{model.X:X_batch, model.y: y_batch,model.reward:r_batch,model.is_train:True, model.keep_prob:dropout})
         track_train.add(cost)
 
         if i%log_interval == 0:
-            X_batch, y_batch, y_batch_ind = mnist.val.next_mix_batch(True)
-            cost,pred = sess.run([model.cost_batch,model.pred],{model.X:X_batch, model.y:y_batch, model.keep_prob: 1.0})
+            X_batch, y_batch, r_batch = mnist.train.random_policy()
+            cost,pred = sess.run([model.MAE,model.pred],{model.X:X_batch, model.y:y_batch,model.reward:r_batch,model.is_train:False, model.keep_prob: 1.0})
+            acc = np.mean(np.logical_and(pred > 0.5, r_batch))
+            # if i > 3000:
+            #     for n in range(10):
+            #         print(pred[n], r_batch[n])
             track_val.add(cost)
-            acc = acc_intersection(pred, y_batch_ind)
             track_acc.add(acc)
-            print("At %7i/%7i for train %5.3f/%5.3f for val %5.3f/%5.3f for acc %5.3f/%5.3f"%(i,max_iterations,*track_train.tup,*track_val.tup, *track_acc.tup))
+            print("At %7i/%7i for train %5.3f/%5.3f for val %5.3f/%5.3f and acc %5.3f/%5.3f "%(i,max_iterations,*track_train.tup,*track_val.tup, *track_acc.tup))
 
 except KeyboardInterrupt:
     print('Finished training')

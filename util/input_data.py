@@ -34,7 +34,7 @@ import numpy as np
 from scipy.misc import imresize
 from scipy.ndimage import zoom
 
-from util.util_funcs import nhot
+from util.util_funcs import nhot, onehot
 
 
 def maybe_download(filename, work_directory):
@@ -188,6 +188,24 @@ class DataSet(MNISTDataSet):
     end = self._index_in_epoch
     return self._images[start:end], self._labels[start:end]
 
+  def random_policy(self, bsz=None):
+      if bsz is None:
+          bsz = self.bsz
+      X, y = self.next_batch(batch_size =bsz)
+
+      X = np.reshape(X,(bsz,28,28))
+
+      # action = np.random.choice(self.num_actions, (self.bsz,))
+      action = np.zeros((bsz,), dtype=np.int16)
+      for i in range(bsz):
+          H = 5
+          p = H/(self.num_actions-1)*np.ones((self.num_actions,))
+          p[y[i]] = H
+          p /= self.num_actions
+          action[i] = np.random.choice(self.num_actions, p=p)
+      reward = np.clip(2-np.abs(action-y),0,5)
+      return X[:,::2,::2], onehot(action), reward
+
   def plot_example(self,mix=False):
       """
       plots some examples of the data under consideration
@@ -210,14 +228,38 @@ class DataSet(MNISTDataSet):
           axarr[x].set_title('label %s'%label[x])
       plt.show()
       return
+
+  def simulate_logged_bandit(self, bsz = None):
+      """Simulates the logged bandit feedback. For some features, it uses a random policy (to be defined) and
+      calculates the corresponding reward"""
+      if bsz is None:
+        bsz = self.bsz
+
+      IM, LBL = self.next_mix_batch()
+
+      # Implement your random policy
+      recommend = np.random.randint(0,self.num_actions,(bsz,))
+      reward = np.zeros((bsz,))
+      # TODO make this for-loop efficient
+      for i in range(bsz):
+          if recommend[i] in LBL[i]:
+              reward[i] = 1
+
+      return IM, onehot(recommend), reward
+
+
+
+
+
   def next_mix_batch(self,make_hot = False,bsz = None, width = None, height = None,NUM=None):
       """
       Samples a batch and mixes NUM digits into one big image
       :param bsz: batchsize of the output
       :param NUM: number of digits to mix
       :param make_hot: a function to make your output n_hot
-      :return: image array [bsz, width, width] and label array [bsz,]
+      :return: image array [bsz, width, width] and label array [bsz,NUM]
       """
+      #get fdefault arguments from class
       if bsz is None:
         bsz = self.bsz
       if width is None:
@@ -228,13 +270,13 @@ class DataSet(MNISTDataSet):
         height = self.height
 
       X,Y = self.next_batch(bsz*NUM)
-      # print('var before%5.3f'%np.var(X))
-      # print('mean before%5.3f'%np.mean(X))
+
       IM = [None]*bsz
       LBL = [None]*bsz
 
       width2 = 14
 
+      # Randomly stack the image into the bigger image
       for b in range(bsz):
         im = np.zeros((height, width))
         vert = np.random.randint(0, max(int(width/3)-width2,1),(3,))
@@ -254,11 +296,6 @@ class DataSet(MNISTDataSet):
       IMS = np.stack(IM)
       LBLS = np.stack(LBL)
 
-      # # TODO remove this ugly lines:
-      # # IMS -= np.mean(IMS)
-      # # IMS /= np.std(IMS)
-      # print('var after%5.3f' % np.var(IMS))
-      # print('mean after%5.3f' % np.mean(IMS))
 
       if make_hot:
         return IMS, nhot(LBLS.copy()), LBLS

@@ -11,6 +11,18 @@ def nhot(X, D = 10):
         Y[n,X[n]] = 1.0/d
     return Y
 
+
+def onehot(X, D = 10):
+    assert isinstance(X, np.ndarray), "Expected np.ndarray, however, we got %s"%type(X)
+    #TODO remove squeeze??
+    X = np.squeeze(X)
+    assert len(X.shape) == 1
+    # TODO remove this ugly for-loop for something more efficient
+    N = X.shape[0]
+    Y = np.zeros((N,D))
+    Y[range(N),X] = 1.0
+    return Y
+
 def acc_intersection(X,Y):
     """
     Calculate the accuracy.

@@ -47,7 +47,14 @@ Think of recommendations:
 
 # Experiments
 
-  Some text here
+  We split up the experiments in two tracks: the naive approach and the more sophisticated approach
+
+    * In the naive approach, we model the reward given the input and action. Our policy will then be simply the argmax over all actions.
+    Now, why is this **naive**?
+
+      * There is a bias in the dataset of X and Y. Think of it like this: if you watch a good movie on Netflix, you're more likely to recommend it. So for some parts of input space, X, you're have disproportionally many (x,y) tuples
+
+      * We are solving a problem we don't really care about. Who care about how the rewards behave given input tuples. Our boss cares about what we recommend and if it generates revenue.
 
 # Results
 
