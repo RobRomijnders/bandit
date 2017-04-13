@@ -59,9 +59,9 @@ class Model():
             self.ind = tf.stack([tf.range(0,bsz),self.y],axis=1)
             self.pol_y = tf.gather_nd(self.pi,self.ind)                           #in [bsz,]
             importance = tf.divide(self.pol_y,self.pol_0)                    #in [bsz,]
-            effective_sample_size = tf.reduce_sum(importance)                #scalar
+            effective_sample_size = tf.stop_gradient(tf.reduce_sum(importance))                #scalar
             importance_sampling = tf.multiply(importance,self.reward)        #in [bsz,]
-            self.SN_estimator = tf.reduce_sum(importance_sampling)/tf.stop_gradient(effective_sample_size) #scalar
+            self.SN_estimator = tf.reduce_sum(importance_sampling)/effective_sample_size #scalar
 
         with tf.variable_scope('opt', reuse=False) as scope:
 
